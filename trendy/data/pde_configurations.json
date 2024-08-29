@@ -1,0 +1,155 @@
+{
+    "GrayScott": {
+        "recommended_param_ranges": [[0.002,0.11],[0.05,0.073],[0.10,0.10001],[0.05,0.05001]], 
+        "solver_params":{"T":4000, "nx":64, "dt":1.0, "dx":1.0, "init_type": "noise", "noise_magnitude": 0.2, "center":[1.0,0.0]},
+        "description": "The Gray-Scott model describes a reaction-diffusion system. Reference: http://www.mrob.com/pub/comp/xmorphia/index.html",
+        "equation": "u_t = D_u \\nabla^2 u - uv^2 + F(1-u), \\quad v_t = D_v \\nabla^2 v + uv^2 - (F+k)v",
+        "channels": 2,
+        "dim": 2,
+        "rd": true
+    },
+    "GrayScottFull": {
+        "recommended_param_ranges": [[0.002,0.11],[0.05,0.073],[0.10,0.10001],[0.05,0.05001]], 
+        "solver_params":{"T":4000, "nx":64, "dt":1.0, "dx":1.0, "init_type": "noise_rand_center", "noise_magnitude": 0.2, "center_range":[[0.75,1.25],[-0.25,0.25]]},
+        "description": "The Gray-Scott model describes a reaction-diffusion system. Reference: http://www.mrob.com/pub/comp/xmorphia/index.html",
+        "equation": "u_t = D_u \\nabla^2 u - uv^2 + F(1-u), \\quad v_t = D_v \\nabla^2 v + uv^2 - (F+k)v",
+        "channels": 2,
+        "dim": 2,
+        "rd": true
+    },
+ 
+   "Brusselator": {
+       "recommended_param_ranges": [[1.0, 2.5], [1.0, 6.25], [0.1, 0.10001], [0.2, 0.20001]],
+       "solver_params": {
+           "T": 20,
+           "nx": 64,
+           "dt": 0.01,
+           "dx": 1,
+           "init_type": "noise",
+           "noise_magnitude": 0.1,
+           "center": [0.0, 0.0]
+       },
+       "description": "The Brusselator model is a theoretical model for autocatalytic chemical reactions, showing complex dynamical behavior such as oscillations and chaos. Reference: https://en.wikipedia.org/wiki/Brusselator",
+       "equation": "u_t = D_u \\nabla^2 u + A + u^2 v - (B + 1) u, \\quad v_t = D_v \\nabla^2 v + B u - u^2 v",
+       "channels": 2,
+       "dim": 2,
+       "rd": true
+   },
+   "BrusselatorFull": {
+       "recommended_param_ranges": [[1.0, 2.5], [1.0, 6.25], [0.1, 0.10001], [0.2, 0.20001]],
+       "solver_params": {
+           "T": 20,
+           "nx": 64,
+           "dt": 0.01,
+           "dx": 1,
+           "init_type": "noise_rand_center",
+           "noise_magnitude": 0.1,
+           "center_range": [[0,6.25],[0,6.25]]
+       },
+       "description": "The Brusselator model is a theoretical model for autocatalytic chemical reactions, showing complex dynamical behavior such as oscillations and chaos. Reference: https://en.wikipedia.org/wiki/Brusselator",
+       "equation": "u_t = D_u \\nabla^2 u + A + u^2 v - (B + 1) u, \\quad v_t = D_v \\nabla^2 v + B u - u^2 v",
+       "channels": 2,
+       "dim": 2,
+       "rd": true
+   },
+    "ActivatorSD": {
+        "recommended_param_ranges": [[0.0,0.2],[0.0,0.3],[1.0, 1.00001]], 
+        "solver_params":{"T":100, "nx":64, "dt":0.01, "dx":0.5, "init_type": "noise", "noise_magnitude": 0.2, "center":[1.0,1.0]},
+        "description": "http://be150.caltech.edu/2019/handouts/21_turing.html",
+        "equation": "u_t = D_u \\nabla^2 uv^2 - u \\quad v_t = \\nabla^2 v + uv^2 + mu(1-u^2v)",
+        "channels": 2,
+        "dim": 2,
+        "rd": true
+    },
+ 
+    "FitzHughNagumo": {
+        "recommended_param_ranges": [[0.9,1.1],[0.9,1.1],[0.0,0.2], [0.9,1.1], [0.28, 0.32],[5.25,5.5]],
+        "solver_params": {"T": 45, "nx":64, "dt":0.01, "dx": 1.0, "init_type": "noise", "noise_magnitude": 1.0, "center": [0.0,0.0]},
+        "description": "The FitzHugh-Nagumo model describes the electrical activity of neurons. Reference: https://en.wikipedia.org/wiki/FitzHugh%E2%80%93Nagumo_model",
+        "equation": "u_t = D_u \\nabla^2 u + u(1-u)(u-a) - v, \\quad v_t = D_v \\nabla^2 v + \\epsilon(u - bv)",
+	"channels": 2,
+        "dim": 2,
+        "rd": true
+    },
+    "NewFN": {
+        "recommended_param_ranges": [[0.01,0.03],[0.15,0.3],[0.001,0.005], [0.0,0.1], [0.01, 0.01001],[0.02,0.02001]],
+        "solver_params": {"T": 1.0, "nx":64, "dt":0.001, "dx": 1.0, "init_type": "noise", "noise_magnitude": 0.01, "center": [0.0,0.0]},
+        "description": "The FitzHugh-Nagumo model describes the electrical activity of neurons. Reference: https://en.wikipedia.org/wiki/FitzHugh%E2%80%93Nagumo_model",
+        "equation": "u_t = D_u \\nabla^2 u + u(1-u)(u-a) - v, \\quad v_t = D_v \\nabla^2 v + \\epsilon(u - bv)",
+	"channels": 2,
+        "dim": 2,
+        "rd": true
+    },
+    "SimpleFN": {
+        "recommended_param_ranges": [[0.9,1.1], [0.1, 0.1001],[0.5, 0.5101]],
+        "solver_params": {"T": 15, "nx":64, "dt":0.1, "dx": 0.75, "init_type": "noise", "noise_magnitude": 0.1, "center": [0.0,0.0]},
+        "description": "The FitzHugh-Nagumo model describes the electrical activity of neurons. Reference: https://en.wikipedia.org/wiki/FitzHugh%E2%80%93Nagumo_model",
+        "equation": "u_t = D_u \\nabla^2 u + u(1-u)(u-a) - v, \\quad v_t = D_v \\nabla^2 v + \\epsilon(u - bv)",
+	"channels": 2,
+        "dim": 2,
+        "rd": true
+    },
+ 
+    "LotkaVolterra": {
+        "recommended_param_ranges":[[0.1,1.0],[0.036,0.044],[0.0036, 0.0044]],
+        "solver_params": {"T": 100, "dt": 0.1, "dx": 1.0, "nx": 64, "init_type": "noise", "noise_magnitude": 0.1, "center":[1,1]},
+        "description": "The Lotka-Volterra model, also known as the predator-prey equations, models the dynamics of biological systems. Reference: https://en.wikipedia.org/wiki/Lotka%E2%80%93Volterra_equations",
+        "equation": "u_t = D_u \\nabla^2 u + u(1-v), \\quad v_t = D_v \\nabla^2 v - v(1-u)",
+	"channels": 2,
+	"dim": 2,
+	"rd": true
+	},
+    "Schnakenberg": {
+        "recommended_param_ranges": [[0.1, 1.0], [0.1, 1.5], [0.01, 0.1], [0.1,1.0]],
+        "solver_params": {"T":10,"dt": 0.01, "dx": 1.0, "nx": 64, "init_type": "noise", "noise_bounds":[-1,1]},
+        "description": "The Schnakenberg model is a simple reaction-diffusion system known for producing Turing patterns. Reference: https://cbeentjes.github.io/files/Ramblings/PatternFormationSchnakenberg.pdf",
+        "equation": "u_t = D_u \\nabla^2 u + a - u + u^2v, \\quad v_t = D_v \\nabla^2 v + b - u^2v",
+	"channels": 2,
+	"dim": 2,
+	"rd": true
+	},
+    "Barkley": {
+        "recommended_param_ranges": [[0.02, 0.1], [0.05, 0.15]],
+        "solver_params": {"T":10, "dt": 0.01, "dx": 1.0, "nx": 64, "init_type": "bump"},
+        "description": "The Barkley model is known for its excitable dynamics and is often used to simulate cardiac tissue and neural dynamics. Reference: http://www.scholarpedia.org/article/Barkley_model",
+        "equation": "u_t = D_u \\nabla^2 u + \\frac{1}{\\epsilon}u(1-u)\\left(u - \\frac{v+b}{a}\\right), \\quad v_t = D_v \\nabla^2 v + u - v",
+	"channels": 2,
+	"dim": 2,
+	"rd": true
+	},
+    "Thomas": {
+        "recommended_param_ranges": [[0.02, 0.2], [0.02, 0.2], [1, 5], [1, 5]],
+        "solver_params": {"T": 100, "dt": 0.1, "dx": 1.0, "nx": 64, "init_type": "bump", "noise_magnitude": 0.25},
+        "description": "The Thomas model is a reaction-diffusion system with polynomial terms, capable of producing complex Turing patterns. It involves the interaction of two species with cubic and quadratic non-linearities.",
+        "equation": "u_t = D_u \\nabla^2 u + a - u - 4u^3 + u^2v, \\quad v_t = D_v \\nabla^2 v + b - v + u^2v",
+        "channels": 2,
+        "dim": 2,
+        "rd": true
+        },
+    "Polynomial": {
+	"recommended_param_ranges": [[-0.01,0.01]],
+	"solver_params": {"T":10, "dt": 0.01, "dx": 1.0, "nx": 64, "init_type": "noise", "noise_bounds": [-1,1]},
+	"description": "A general polynomial PDE with diffusion. This PDE represents a wide range of systems through polynomial expressions and diffusion terms. Reference: https://en.wikipedia.org/wiki/Reaction%E2%80%93diffusion_system",
+	"equation": "u_t = D \\nabla^2 u + P(u, \\nabla u, \\nabla^2 u, ...)",
+	"channels": 2,
+	"dim": 2,
+	"rd": true
+	},
+    "Oregonator": {
+        "recommended_param_ranges": [[0.06, 0.08], [0.07,0.09],[0.01,0.010001], [0.1,0.10001]],
+        "solver_params": {
+            "T": 10, 
+            "nx": 64, 
+            "dt": 0.005, 
+            "dx": 1.0, 
+            "init_type": "noise", 
+            "noise_magnitude": 0.2, 
+            "center": [0.0, 0.0]
+        },
+        "description": "The Oregonator model is a simplified version of the Belousov-Zhabotinsky reaction, a classic example of non-equilibrium thermodynamics demonstrating chemical oscillations. Reference: https://en.wikipedia.org/wiki/Oregonator",
+        "equation": "u_t = D_u \\nabla^2 u + A u - u^2 v + u(1 - u), \\quad v_t = D_v \\nabla^2 v + B(u - u^2 v)",
+        "channels": 2,
+        "dim": 2,
+        "rd": true
+    }
+}
