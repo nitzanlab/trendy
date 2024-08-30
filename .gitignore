@@ -18,6 +18,7 @@ run/models/
 run/data/
 run/figs/
 run/logs/
+run/scripts/tests/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
