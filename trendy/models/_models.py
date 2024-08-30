@@ -7,9 +7,10 @@ from sklearn.decomposition import PCA
 import os
 
 class TRENDy(nn.Module):
-    def __init__(self, in_shape, measurement_type='scattering', measurement_kwargs={}, use_log_scale=False, use_pca=True, pca_components=2, num_params=4, node_hidden_layers=[64,64], node_activations='relu', dt=.01, T=1, non_autonomous=False):
+    def __init__(self, in_shape, measurement_type='scattering', measurement_kwargs={}, use_log_scale=False, use_pca=True, pca_components=2, num_params=4, node_hidden_layers=[64,64], node_activations='relu', dt=.01, T=1, non_autonomous=False, pca_dir='./models/pca'):
         super(TRENDy, self).__init__()
 
+        self.use_pca          = use_pca
         self.measurement_type = measurement_type
         self.use_log_scale    = use_log_scale
         self.non_autonomous   = non_autonomous
@@ -25,6 +26,8 @@ class TRENDy(nn.Module):
 
         # Set PCA layer and relevant dimensions
         if use_pca:
+            os.makedirs(pca_dir, exist_ok=True)
+            self.pca_dir = pca_dir
             self.pca_layer = PCALayer(self.measurement_dim, pca_components)
             self.node_input_dim = pca_components
         else:
@@ -48,17 +51,13 @@ class TRENDy(nn.Module):
         if self.use_log_scale:
             measurement = torch.log10(measurement)
 
-        if hasattr(self, 'pca_layer'):
+        if self.use_pca:
             measurement = self.pca_layer(measurement)
 
         return measurement
 
-    def fit_pca(self, dl, pca_timestep=-1, max_samples = np.inf, model_dir=None):
+    def fit_pca(self, dl, pca_timestep=-1, max_samples = np.inf, verbose=True):
         '''Fit PCA and set layer'''
-
-        if model_dir is not None:
-            if not os.path.exists(model_dir):
-                os.makedirs(model_dir)
 
         # Instantiate PCA object from sklearn
         pca = PCA(n_components=self.node_input_dim)
@@ -68,6 +67,8 @@ class TRENDy(nn.Module):
         print(f'Acquiring states from time {pca_timestep}', flush=True)
         all_states = []
         for d, data in enumerate(dl):
+            if verbose:
+                print(f'Batch {d}')
             X = data['X']
 
             # If a video, i.e., not a measurement (batch x time x channel x height x width)
@@ -87,16 +88,12 @@ class TRENDy(nn.Module):
         # Fit PCA model
         print(f'Fitting PCA.', flush=True)
         pca.fit(all_states)
-        print(f'Done.\n')
 
         # Set and save PCA layer
         print('Setting and saving pca layer.')
         self.pca_layer.linear.weight.data = torch.tensor(pca.components_, dtype=torch.float32)
         self.pca_layer.mean.data = torch.tensor(pca.mean_, dtype=torch.float32)
-        if model_dir is not None:
-            save_checkpoint(self, None, 0, model_dir)
-            #torch.save(self.state_dict(), os.path.join(model_dir, 'model.pt'))
-        print('Done.\n')
+        save_checkpoint(self, None, 0, None, save_full_model=False)
 
     def run(self, init, params):
 
@@ -119,7 +116,7 @@ class TRENDy(nn.Module):
             if init.shape[-1] != self.node_input_dim:
 
                 # Either it has not yet been reduced by PCA
-                if hasattr(self, 'pca_layer'):
+                if self.use_pca:
                     init = self.pca_layer(init)
                 # Otherwise, the measurement is simply not shaped correctly
                 else:

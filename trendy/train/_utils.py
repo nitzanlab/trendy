@@ -68,39 +68,78 @@ def set_seed(seed_value=0):
     torch.backends.cudnn.benchmark = False
 
 # Function to save a model checkpoint
-def save_checkpoint(model, optimizer, epoch, model_dir):
-    checkpoint_path = os.path.join(model_dir, f"checkpoint.pt")
+def save_checkpoint(model, optimizer, epoch, model_dir, save_full_model=True):
     
     # Sometimes you don't have an opt to save or don't want to
     saved_opt = None if optimizer is None else optimizer.state_dict()
 
-    torch.save({
-        'epoch': epoch,
-        'model_state_dict': model.state_dict(),
-        'optimizer_state_dict': saved_opt,
-    }, checkpoint_path)
+    # Save PCA
+    if model.use_pca:
+        pca_weights = model.pca_layer.state_dict()
+        torch.save(pca_weights, os.path.join(model.pca_dir, 'pca.pt'))
+        print(f'PCA layer saved at {os.path.join(model.pca_dir, "pca.pt")}')
+        non_pca_weights = {k: v for k, v in model.state_dict().items() if not k.startswith('pca_layer.')}
+    else:
+        non_pca_weights = model.state_dict()
 
-    print(f"Checkpoint saved at {checkpoint_path}")
+    if save_full_model:
+        checkpoint_path = os.path.join(model_dir, f"checkpoint.pt")
+        torch.save({
+            'epoch': epoch,
+            'model_state_dict': non_pca_weights,
+            'optimizer_state_dict': saved_opt,
+        }, checkpoint_path)
 
-def load_checkpoint(model, model_dir, optimizer=None, device='cpu'):
-    checkpoint_path = os.path.join(model_dir, f"checkpoint.pt")
-    if not os.path.isfile(checkpoint_path):
-        raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
+        print(f"Checkpoint saved at {checkpoint_path}")
 
-    checkpoint = torch.load(checkpoint_path)
-    model_state_dict = checkpoint['model_state_dict']
+def load_checkpoint(model, model_dir, pca_dir=None, only_load_pca=False, optimizer=None, device='cpu'):
+
+    # Will include potentially both the PCA and model state dicts
+    all_state_dicts = {}
+
+    # If you have a pca layer, load it
+    if model.use_pca:
+        if pca_dir is None:
+            raise ValueError("No PCA directory provided!")
+        pca_path = os.path.join(pca_dir, 'pca.pt')
+        pca_state_dict = torch.load(pca_path)
+        print(f'PCA layer loaded from {pca_path}')
+        all_state_dicts['pca'] = pca_state_dict
+
+    # If you want to load the full model and not just the pca layer
+    if not only_load_pca:
+
+        checkpoint_path = os.path.join(model_dir, f"checkpoint.pt")
+        if not os.path.isfile(checkpoint_path):
+            raise FileNotFoundError(f"No checkpoint found at {checkpoint_path}")
+
+        checkpoint = torch.load(checkpoint_path)
+        model_state_dict = checkpoint['model_state_dict']
+        all_state_dicts['model'] = model_state_dict
+
+        epoch = checkpoint['epoch']
+
+        print(f"Checkpoint loaded from {checkpoint_path}, epoch {epoch}")
+    else:
+        epoch = 0
 
     # If the model was saved as a DataParallel model, adjust accordingly
-    if 'module.' in list(model_state_dict.keys())[0]:
-        # Create a new OrderedDict without the 'module' prefix
-        from collections import OrderedDict
-        new_state_dict = OrderedDict()
-        for k, v in model_state_dict.items():
-            name = k[7:]  # Remove 'module.' prefix
-            new_state_dict[name] = v
-        model_state_dict = new_state_dict
-    
-    model.load_state_dict(model_state_dict)
+    # Load all state dicts
+    for state_dict_name, state_dict in all_state_dicts.items():
+        if 'module.' in list(state_dict.keys())[0]:
+            # Create a new OrderedDict without the 'module' prefix
+            from collections import OrderedDict
+            new_state_dict = OrderedDict()
+            for k, v in state_dict.items():
+                name = k[7:]  # Remove 'module.' prefix
+                new_state_dict[name] = v
+            state_dict = new_state_dict
+       
+        if state_dict_name == 'pca':
+            model.pca_layer.load_state_dict(state_dict)
+        else:
+            model.load_state_dict(state_dict, strict=False)
+
     if optimizer is not None:
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 
@@ -109,10 +148,6 @@ def load_checkpoint(model, model_dir, optimizer=None, device='cpu'):
             for k, v in state.items():
                 if isinstance(v, torch.Tensor):
                     state[k] = v.to(device)
-
-    epoch = checkpoint['epoch']
-   
-    print(f"Checkpoint loaded from {checkpoint_path}, epoch {epoch}")
 
     return model.to(device), optimizer, epoch
 
