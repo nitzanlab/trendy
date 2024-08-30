@@ -1,9 +1,9 @@
 import torch
 from torch.utils.data import DataLoader
-from phase2vec_spatial import PDE
-from phase2vec_spatial.models import TRENDy
-from phase2vec_spatial.train import *
-from phase2vec_spatial.data import SP2VDataset
+from trendy import PDE
+from trendy.models import TRENDy
+from trendy.train import *
+from trendy.data import SP2VDataset
 from torchvision import models
 from scipy.ndimage import correlate
 import matplotlib.patches as mpatches
@@ -24,6 +24,7 @@ warnings.filterwarnings("ignore", category=UserWarning, module="torch")
 parser = argparse.ArgumentParser()
 parser.add_argument('--pde_name', type=str, default='Brusselator')
 parser.add_argument('--model_dir', type=str, default='./models/tentative/run_0')
+parser.add_argument('--view_estimate', action='store_true')
 parser.add_argument('--base_params', nargs='+', required=True, type=float)
 parser.add_argument('--num_sols', type=int, default=100)
 parser.add_argument('--bp_ind', type=int, required=True)
@@ -33,7 +34,8 @@ parser.add_argument('--fig_dir', type=str, default='./figs', help='Where to save
 base_args = parser.parse_args()
 
 # Move model to GPU if available
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
 print(f'Using device: {device}')
 
 manifest_fn = os.path.join(base_args.model_dir, 'training_manifest.json')
@@ -59,29 +61,40 @@ print_every = 5
 print(f'Solving {base_args.num_sols} instances of {base_args.pde_name} while varying parameter {base_args.bp_ind}.', flush=True)
 for s in range(base_args.num_sols):
 
-    if s % print_every == 0:
-        print(f'Solution {s}. Parameter: {par_range[s]:.3f}.', flush=True)
+    start = time()
 
     # Set current parameter
     params = torch.tensor(base_args.base_params)
     params[base_args.bp_ind] = par_range[s]
-    pde = PDE(base_args.pde_name, params=params)
+    pde = PDE(base_args.pde_name, params=params.to(device), device=device)
 
     # Compute gt measurement
-    solution = model.compute_measurement(pde.run().to(device))
+    pde_solution = pde.run().squeeze()
+    solution = model.compute_measurement(pde_solution.unsqueeze(0))
 
     # Compute est measurement
-    init = solution[0]
-    estimated = model.run(init, params.unsqueeze(0))
+    if base_args.view_estimate:
+        init = solution[0]
+        estimated = model.run(init.to(device), params.unsqueeze(0)).squeeze()
+    else:
+        estimated = None
 
     # Collate
-    all_gt.append(solution)
+    all_gt.append(solution.squeeze())
     all_est.append(estimated)
     all_params.append(params)
+    
+    stop = time()
+    if s % print_every == 0:
+        print(f'Solution {s}. Parameter: {par_range[s]:.3f}. Time: {stop-start:.3f}', flush=True)
+
 print('Done', flush=True)
 print('Making videos for...', flush=True)
 for plot_sols, plot_which in zip([all_gt, all_est], ['gt', 'est']):
     print(plot_which)
+    if plot_which == 'est' and base_args.view_estimate is False:
+        break
+    plot_sols = torch.stack(plot_sols).detach().cpu().numpy()
     num_samples, time_steps, num_features = plot_sols.shape
     
     # Set up the figure, the axis, and the plot elements
@@ -114,5 +127,5 @@ for plot_sols, plot_which in zip([all_gt, all_est], ['gt', 'est']):
     # saving to m4 using ffmpeg writer 
     writervideo = FFMpegWriter(fps=10) 
     print('Saving video...', flush=True)
-    ani.save(os.path.join(base_args.fig_dir, f'{plot_which}_{args.pde_name}.mp4'), writer=writervideo) 
+    ani.save(os.path.join(base_args.fig_dir, f'{plot_which}_{base_args.pde_name}.mp4'), writer=writervideo) 
     plt.close()

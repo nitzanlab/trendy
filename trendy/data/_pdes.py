@@ -54,9 +54,9 @@ class PDE(torch.nn.Module):
             if pde_name == 'Polynomial':
                 num_terms = total_polynomial_terms(self.dim, self.poly_order) * self.channels + self.channels
                 param_ranges = param_ranges * num_terms
-            self.flat_params = torch.stack([torch.rand(1) * (high - low) + low for low, high in param_ranges])
+            self.flat_params = torch.stack([torch.rand(1) * (high - low) + low for low, high in param_ranges]).cpu()
         else:
-            self.flat_params = params
+            self.flat_params = params.cpu()
 
         # Make sure diffusion parameters are non-negative
         self.flat_params[-self.dim:] = torch.clamp(self.flat_params[-self.channels:],min=0)
@@ -85,7 +85,7 @@ class PDE(torch.nn.Module):
     def get_diffusion_params(self):
         return torch.stack([p for p in self.params])[-self.channels:]
 
-    def run(self, solver_params: dict = None, init: torch.Tensor = None, num_inits: int = 1, use_adjoint: bool = False, verbose: int = 1, train=False, new_solver=False) -> torch.Tensor:
+    def run(self, solver_params: dict = None, init: torch.Tensor = None, num_inits: int = 1, use_adjoint: bool = False, verbose: int = 1, train=False, new_solver=True) -> torch.Tensor:
         if solver_params is None:
             solver_params = self.config['solver_params']
 
@@ -101,6 +101,8 @@ class PDE(torch.nn.Module):
 
         # Prepare initial conditions
         init = initial_condition(solver_params, num_inits=num_inits) if init is None else init
+
+        init = init.to(self.device)
         # Define time points for the solution
         time_points = torch.linspace(0, T, int(T / dt) + 1)
 

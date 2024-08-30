@@ -20,7 +20,8 @@ class TRENDy(nn.Module):
         # Compute measurement dim
         with torch.no_grad():
             # Pass random data of shape batch (1) x time (1) * in_shape (c x h x w)
-            self.measurement_dim = self.measurement(torch.rand(1, 1, *in_shape)).shape[-1]
+            device = measurement_kwargs.get('device','cpu')
+            self.measurement_dim = self.measurement(torch.rand(1, 1, *in_shape).to(device)).shape[-1]
 
         # Set PCA layer and relevant dimensions
         if use_pca:
@@ -120,7 +121,6 @@ class TRENDy(nn.Module):
                 # Either it has not yet been reduced by PCA
                 if hasattr(self, 'pca_layer'):
                     init = self.pca_layer(init)
-                    print(init)
                 # Otherwise, the measurement is simply not shaped correctly
                 else:
                     raise ValueError(f"Initial condition is not correctly shaped. With the measurement '{self.measurement_type} and without pca', the initial condition should have {self.node_input_dim} features.")
