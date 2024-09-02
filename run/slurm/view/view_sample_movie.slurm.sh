@@ -4,4 +4,4 @@
 #SBATCH --time=0:10:00
 #SBATCH --output=./logs/slurm/output-%j.out
 
-python ./scripts/view/view_sample_movie.py --pde_name Min --step 1 --data_dir ./data/min/train --index 1;
+python ./scripts/view/view_sample_movie.py --pde_name GrayScott --step 40 --params .054 .062 .1 .05;

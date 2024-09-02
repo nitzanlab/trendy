@@ -56,7 +56,7 @@ class TRENDy(nn.Module):
 
         return measurement
 
-    def fit_pca(self, dl, pca_timestep=-1, max_samples = np.inf, verbose=True):
+    def fit_pca(self, dl, pca_timestep=-1, max_samples = np.inf, verbose=False):
         '''Fit PCA and set layer'''
 
         # Instantiate PCA object from sklearn
@@ -90,7 +90,7 @@ class TRENDy(nn.Module):
         pca.fit(all_states)
 
         # Set and save PCA layer
-        print('Setting and saving pca layer.')
+        print('Setting and saving pca layer.\n')
         self.pca_layer.linear.weight.data = torch.tensor(pca.components_, dtype=torch.float32)
         self.pca_layer.mean.data = torch.tensor(pca.mean_, dtype=torch.float32)
         save_checkpoint(self, None, 0, None, save_full_model=False)

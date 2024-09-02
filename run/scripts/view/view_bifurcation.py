@@ -48,7 +48,7 @@ for key, value in training_data.items():
 
 measurement_kwargs = {'device':device}
 model = TRENDy(args.in_shape, measurement_type=args.measurement_type, measurement_kwargs=measurement_kwargs, use_pca=args.use_pca, pca_components=args.pca_components, num_params=len(base_args.base_params), node_hidden_layers=args.node_hidden_layers, node_activations=args.node_activations, dt=args.dt_est, T=args.T_est, non_autonomous=args.non_autonomous)
-model, _, _ = load_checkpoint(model, base_args.model_dir, device=device)
+model, _, _ = load_checkpoint(model, base_args.model_dir, device=device, pca_dir='./models/pca/scattering_brusselator_pca_2')
 
 model = model.to(device)
 
@@ -74,8 +74,8 @@ for s in range(base_args.num_sols):
 
     # Compute est measurement
     if base_args.view_estimate:
-        init = solution[0]
-        estimated = model.run(init.to(device), params.unsqueeze(0)).squeeze()
+        init = solution[:,0]
+        estimated = model.run(init.to(device), params.unsqueeze(0).to(device)).squeeze()
     else:
         estimated = None
 
