@@ -8,4 +8,4 @@
 #SBATCH --output=./logs/slurm/output-%A_%a.out
 
 # Run the Python script for a subset of data
-python ./scripts/data/make_data.py --task_id $SLURM_ARRAY_TASK_ID --chunks 100 --pde_class GrayScott --num_bins 50 --output_dir ./data/scattering_grayscott_focused --measurement_type scattering --save_pde_solutions;
+python ./scripts/data/make_data.py --task_id $SLURM_ARRAY_TASK_ID --chunks 100 --pde_class BrusselatorFull --num_bins 50 --output_dir ./data/scattering_brusselator_full --measurement_type scattering --save_pde_solutions;

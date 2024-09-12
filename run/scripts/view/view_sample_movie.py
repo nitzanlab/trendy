@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data import DataLoader
+from trendy.data import Occluder
 from trendy import PDE
 from trendy.utils import save_solution_as_movie
 from time import time
@@ -16,6 +17,7 @@ parser.add_argument('--pde_name', type=str, default='GrayScott')
 parser.add_argument('--data_dir', type=str, default=None)
 parser.add_argument('--index', type=int, default=0)
 parser.add_argument('--params', nargs='+', type=float, default=None, help='System to parameters, if not random.')
+parser.add_argument('--noise_type', type=str, default=None)
 parser.add_argument('--fig_dir', type=str, default='./figs')
 parser.add_argument('--step', type=int, default=1, help='Plotting period for video.')
 args = parser.parse_args()
@@ -39,6 +41,10 @@ if args.data_dir is None:
 else:
     fn = os.path.join(args.data_dir, f'X_{args.index}.pt')
     pde_solution = torch.load(fn)
+
+if args.noise_type is not None:
+    occluder = Occluder(occlusion_type=args.noise_type)
+    pde_solution = occluder.apply_occlusion(pde_solution)
 
 file_name = f'{args.pde_name}_movie.gif' if args.data_dir is None else f'{args.pde_name}_movie_{args.index}.gif'
 print("Saving movie.", flush=True)

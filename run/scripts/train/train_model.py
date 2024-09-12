@@ -55,8 +55,9 @@ set_seed(args.seed)
 args, device, checkpoint_dir, writer, num_gpus, num_cpus = initialize_training_environment(args)
 
 if args.use_pca and args.pca_dir is None:
-    data_name = args.data_dir.split('/')[-1]
     model_super_dir = args.model_dir.split('/')[1]
+
+    data_name = '_'.join(args.data_dir.split('/')[2:])
     args.pca_dir = os.path.join(model_super_dir, 'pca', data_name + f'_pca_{args.pca_components}')
     pca_path     = os.path.join(args.pca_dir, 'pca.pt')
     pretrained_pca = os.path.exists(pca_path)
@@ -73,9 +74,13 @@ with open(os.path.join(checkpoint_dir, 'training_manifest.json'), 'w') as json_f
 
 # Data loaders
 train_ds = SP2VDataset(data_dir=os.path.join(args.data_dir, 'train'))
-train_dl = DataLoader(train_ds, batch_size=args.batch_size, num_workers=num_cpus, shuffle=True, drop_last=True)
+train_dl = DataLoader(train_ds, batch_size=args.batch_size, num_workers=num_cpus, shuffle=True, drop_last=False)
+
+val_ds = SP2VDataset(data_dir=os.path.join(args.data_dir, 'val'))
+val_dl = DataLoader(val_ds, batch_size=args.batch_size, num_workers=num_cpus, shuffle=True, drop_last=False)
+
 test_ds = SP2VDataset(data_dir=os.path.join(args.data_dir, 'test'))
-test_dl = DataLoader(train_ds, batch_size=args.batch_size, shuffle=False, num_workers=num_cpus)
+test_dl = DataLoader(test_ds, batch_size=args.batch_size, shuffle=False, num_workers=num_cpus)
 
 # Set up model
 model = TRENDy(args.in_shape, measurement_type=args.measurement_type, use_log_scale=args.log_scale,  use_pca=args.use_pca, pca_components=args.pca_components, num_params=args.num_params, node_hidden_layers=args.node_hidden_layers, node_activations=args.node_activations, dt=args.dt_est, T=args.T_est, non_autonomous=args.non_autonomous, pca_dir=args.pca_dir)
@@ -105,6 +110,9 @@ else:
     model_core.fit_pca(train_dl)
     start_epoch = 0
 
+# Set device again? 
+model = model.to(device)
+
 # Turn off gradients for PCA part
 model_core.pca_layer.linear.weight.requires_grad = False
 model_core.pca_layer.mean.requires_grad = False
@@ -121,13 +129,16 @@ else:
     scheduler = None
 
 # Run training loop
-view_losses = {'train': 0, 'test': 0}
+view_losses = {'train': 0, 'val': 0, 'test': 0}
 
 # Training loop
 epoch = start_epoch
 end_epoch = start_epoch + args.num_epochs
 for epoch in range(start_epoch, end_epoch):
-    for dl, mode in zip([train_dl, test_dl], ['train','test']):
+    for dl, mode in zip([train_dl, val_dl, test_dl], ['train','val','test']):
+        if len(dl.dataset) == 0:
+            print(f'Skipping empty {mode} set')
+            continue
         start = time.time()
 
         # Update integration scheduler if necessary
@@ -156,13 +167,13 @@ for epoch in range(start_epoch, end_epoch):
             if args.log_estimate:
                 with torch.no_grad():
                     batch = next(iter(dl))
-                    target, est = process_batch(batch, model, device=device, clip_target=args.clip_target)
+                    target, est = process_batch(batch, model, use_log_scale=args.log_scale, scheduler=scheduler, device=device, clip_target=args.clip_target)
                 fig, ax = plt.subplots()
                 ax.plot(target[0].detach().cpu().numpy(), linestyle='-')
                 plt.gca().set_prop_cycle(None)
                 ax2 = ax.twiny()
                 ax2.plot(est[0].detach().cpu().numpy(), linestyle='--')
-                plot_to_tensorboard(fig, writer, 'Testing Estimate 0', epoch)
+                plot_to_tensorboard(fig, writer, f'{mode} estimate 0', epoch)
                 dl = iter(dl)
             if mode == 'train':
                 save_checkpoint(model, opt, epoch, checkpoint_dir)

@@ -30,6 +30,7 @@ parser.add_argument('--num_sols', type=int, default=100)
 parser.add_argument('--bp_ind', type=int, required=True)
 parser.add_argument('--bp_min', type=float, required=True)
 parser.add_argument('--bp_max', type=float, required=True)
+parser.add_argument('--save_steady_state', action='store_true')
 parser.add_argument('--fig_dir', type=str, default='./figs', help='Where to save figures')
 base_args = parser.parse_args()
 
@@ -47,8 +48,8 @@ for key, value in training_data.items():
     setattr(args, key, value)
 
 measurement_kwargs = {'device':device}
-model = TRENDy(args.in_shape, measurement_type=args.measurement_type, measurement_kwargs=measurement_kwargs, use_pca=args.use_pca, pca_components=args.pca_components, num_params=len(base_args.base_params), node_hidden_layers=args.node_hidden_layers, node_activations=args.node_activations, dt=args.dt_est, T=args.T_est, non_autonomous=args.non_autonomous)
-model, _, _ = load_checkpoint(model, base_args.model_dir, device=device, pca_dir='./models/pca/scattering_brusselator_pca_2')
+model = TRENDy(args.in_shape, measurement_type=args.measurement_type, measurement_kwargs=measurement_kwargs, use_pca=args.use_pca, pca_components=args.pca_components, num_params=len(base_args.base_params), node_hidden_layers=args.node_hidden_layers, node_activations=args.node_activations, dt=args.dt_est, T=args.T_est, non_autonomous=args.non_autonomous, pca_dir=args.pca_dir)
+model, _, _ = load_checkpoint(model, base_args.model_dir, device=device, pca_dir=args.pca_dir)
 
 model = model.to(device)
 
@@ -56,6 +57,7 @@ par_range = torch.linspace(base_args.bp_min, base_args.bp_max, base_args.num_sol
 all_gt = []
 all_est = []
 all_params = []
+all_ss = []
 
 print_every = 5
 print(f'Solving {base_args.num_sols} instances of {base_args.pde_name} while varying parameter {base_args.bp_ind}.', flush=True)
@@ -71,6 +73,8 @@ for s in range(base_args.num_sols):
     # Compute gt measurement
     pde_solution = pde.run().squeeze()
     solution = model.compute_measurement(pde_solution.unsqueeze(0))
+    print(solution[:,-1], flush=True)
+    print("\n")
 
     # Compute est measurement
     if base_args.view_estimate:
@@ -80,6 +84,7 @@ for s in range(base_args.num_sols):
         estimated = None
 
     # Collate
+    all_ss.append(solution.squeeze()[-1])
     all_gt.append(solution.squeeze())
     all_est.append(estimated)
     all_params.append(params)
@@ -89,6 +94,16 @@ for s in range(base_args.num_sols):
         print(f'Solution {s}. Parameter: {par_range[s]:.3f}. Time: {stop-start:.3f}', flush=True)
 
 print('Done', flush=True)
+
+if base_args.save_steady_state:
+    print(f'Saving steady states in {fig_dir}', flush=True)
+    all_ss = np.array(all_ss)
+    all_params = np.array(all_params)
+
+    np.save(os.path.join(base_args.fig_dir, 'all_ss.npy'), all_ss)
+    np.save(os.path.join(base_args.fig_dir, 'all_params.npy'), all_params)
+
+
 print('Making videos for...', flush=True)
 for plot_sols, plot_which in zip([all_gt, all_est], ['gt', 'est']):
     print(plot_which)
